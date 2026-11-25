@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calendrier de l’Avent 2026</title>
+<style>
+:root{color-scheme:light;--red:#a52a2a;--green:#174b35;--gold:#d8b56d;--paper:#fffaf0}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#123d2c,#1c563d);font-family:Georgia,serif;color:#26352c;min-height:100vh}
+header{text-align:center;color:#fff;padding:34px 16px 22px}header h1{font-size:clamp(2rem,6vw,3.5rem);margin:0 0 8px}header p{margin:0;font:1rem Arial,sans-serif}
+main{max-width:1000px;margin:auto;padding:16px}.notice{background:#fff4d6;border:1px solid var(--gold);border-radius:10px;padding:12px 16px;margin:0 auto 18px;max-width:760px;font:14px Arial,sans-serif}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.door{min-height:112px;border:2px solid var(--gold);border-radius:12px;background:linear-gradient(145deg,#b73535,#7f2020);color:#fff;box-shadow:0 4px 8px #071b1270;cursor:pointer;font-family:Georgia,serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;transition:transform .15s}
+.door:hover:not(:disabled){transform:translateY(-3px)}.door strong{font-size:2rem}.door span{font:12px Arial,sans-serif}.door:disabled{background:#42584d;border-color:#74877c;color:#cbd4ce;cursor:not-allowed;box-shadow:none}
+.door.done{background:linear-gradient(145deg,#d8b56d,#a77d35);color:#26352c}
+.panel{display:none;background:var(--paper);border-radius:14px;margin:22px auto;padding:22px;max-width:850px;box-shadow:0 8px 24px #071b1260}.panel.show{display:block}.panel h2{margin-top:0;color:var(--green)}.question{font:16px/1.6 Arial,sans-serif;white-space:pre-wrap}.hints{margin-top:18px}.hint{display:none;background:#f3ead6;padding:12px;border-left:4px solid var(--gold);margin:8px 0;white-space:pre-wrap;font:14px/1.5 Arial,sans-serif}.hint.visible{display:block}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.actions button{border:0;border-radius:7px;padding:10px 14px;background:var(--green);color:white;cursor:pointer}.actions button:disabled{opacity:.4;cursor:not-allowed}.close{float:right;background:#e8e1d3!important;color:#26352c!important}
+footer{text-align:center;color:#e5eadf;padding:25px;font:12px Arial,sans-serif}
+@media(max-width:600px){.grid{grid-template-columns:repeat(3,1fr);gap:8px}.door{min-height:90px}.door strong{font-size:1.6rem}.panel{padding:16px}}
+</style></head>
+<body>
+<header><h1>🎄 Calendrier de l’Avent</h1><p>24 énigmes à découvrir du 1er au 24 décembre 2026</p></header>
+<main>
+<div id="notice" class="notice" hidden></div>
+<section class="grid" id="grid" aria-label="Les 24 cases du calendrier"></section>
+<section class="panel" id="panel" aria-live="polite">
+<button class="close" id="close">Fermer ✕</button><h2 id="dayTitle"></h2>
+<div class="question" id="question"></div>
+<div class="hints" id="hints"></div>
+<div class="actions"><button id="nextHint">Afficher un indice</button></div>
+</section>
+</main>
+<footer>Un défi par jour — Joyeux mois de décembre !</footer>
+<script>
+const testMode=new URLSearchParams(location.search).get('test')==='1';
+const grid=document.getElementById('grid'),panel=document.getElementById('panel'),notice=document.getElementById('notice');
+let puzzles=[];
+function allowedDay(){if(testMode)return 24;const d=new Date();return d.getFullYear()===2026&&d.getMonth()===11?d.getDate():0}
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function parseMarkdown(md){
+ const chunks=md.split(/^## (\d{1,2}) (?:er|) ?décembre — (.+)$/gmi);
+ for(let i=1;i<chunks.length;i+=3){
+  const day=Number(chunks[i]),category=chunks[i+1].trim(),body=chunks[i+2]||'';
+  const parts=body.split(/\*\*Indices\*\*/i),question=parts[0].trim();
+  const hints=(parts[1]||'').split(/^\s*\d+\.\s*/m).filter(Boolean).map(x=>x.trim());
+  puzzles.push({day,category,question,hints});
+ }
+}
+function renderQuestion(s){
+ let out='',inCode=false,code='';
+ for(const line of s.split('\n')){
+  if(line.trim().startsWith('```')){if(!inCode){inCode=true;code=''}else{out+='<pre>'+esc(code.replace(/\n$/,''))+'</pre>';inCode=false}continue}
+  if(inCode){code+=line+'\n';continue}
+  if(/^\\\[|^\\\]|^---/.test(line.trim()))continue;
+  let x=esc(line).replace(/\\\((.*?)\\\)/g,'$1').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\*(.*?)\*/g,'<i>$1</i>');
+  out+=x+'\n';
+ }
+ if(inCode)out+='<pre>'+esc(code)+'</pre>';
+ return out;
+}
+function openPuzzle(day){
+ const p=puzzles.find(x=>x.day===day);if(!p)return;
+ document.getElementById('dayTitle').textContent=' '+day+' décembre — '+p.category;
+ document.getElementById('question').innerHTML=renderQuestion(p.question);
+ const area=document.getElementById('hints');area.innerHTML='';
+ p.hints.forEach((h,i)=>{const d=document.createElement('div');d.className='hint';d.dataset.index=i;d.textContent='Indice '+(i+1)+' : '+h;area.appendChild(d)});
+ panel.classList.add('show');panel.scrollIntoView({behavior:'smooth',block:'start'});
+ let shown=0;const btn=document.getElementById('nextHint');btn.disabled=p.hints.length===0;btn.textContent=p.hints.length?'Afficher le premier indice':'Aucun indice';
+ btn.onclick=()=>{if(shown<p.hints.length){area.children[shown].classList.add('visible');shown++;btn.textContent=shown<p.hints.length?'Afficher l’indice suivant':'Tous les indices sont affichés';btn.disabled=shown>=p.hints.length}};
+}
+document.getElementById('close').onclick=()=>panel.classList.remove('show');
+async function start(){
+ try{
+ const res=await fetch('./enigmes-eliot.md');if(!res.ok)throw new Error('Fichier des énigmes introuvable');parseMarkdown(await res.text());
+ if(puzzles.length!==24)throw new Error('Le document ne contient pas 24 énigmes reconnues ('+puzzles.length+')');
+ const max=allowedDay();
+ if(testMode){notice.hidden=false;notice.textContent='MODE TEST : les 24 cases sont ouvertes pour permettre de vérifier le calendrier. Eliot ne devra pas utiliser ce lien de test.'}
+ else if(max===0){notice.hidden=false;notice.textContent='Le calendrier ouvrira ses cases à partir du 1er décembre 2026.'}
+ else if(max<24){notice.hidden=false;notice.textContent='Nous sommes le '+max+' décembre : les cases précédentes et celle du jour sont accessibles.'}
+ puzzles.forEach(p=>{
+  const b=document.createElement('button');b.className='door';b.disabled=p.day>max;
+  b.innerHTML='<strong>'+(p.day>max?'🔒':String(p.day).padStart(2,'0'))+'</strong><span>'+(p.day>max?'Bientôt':'Ouvrir la case')+'</span>';
+  if(!b.disabled)b.onclick=()=>openPuzzle(p.day);grid.appendChild(b);
+ });
+ }catch(e){notice.hidden=false;notice.textContent='Impossible de charger le calendrier : '+e.message}
+}
+start();
+</script></body></html>
