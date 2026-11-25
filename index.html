@@ -36,7 +36,7 @@ let puzzles=[];
 function allowedDay(){if(testMode)return 24;const d=new Date();return d.getFullYear()===2026&&d.getMonth()===11?d.getDate():0}
 function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function parseMarkdown(md){
- const chunks=md.split(/^## (\d{1,2}) (?:er|) ?décembre — (.+)$/gmi);
+ const chunks=md.split(/^## (\d{1,2})(?:er)? décembre — (.+)$/gmi);
  for(let i=1;i<chunks.length;i+=3){
   const day=Number(chunks[i]),category=chunks[i+1].trim(),body=chunks[i+2]||'';
   const parts=body.split(/\*\*Indices\*\*/i),question=parts[0].trim();
